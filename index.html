@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+      crossorigin="anonymous"
+    ></script>
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.7/axios.min.js"
+      integrity="sha512-NQfB/bDaB8kaSXF8E77JjhHG5PM6XVRxvHzkZiwl3ddWCEPBa23T76MuWSwAJdMGJnmQqM0VeY9kFszsrBEFrQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <title>Tracking</title>
+  </head>
+  <body class="p-5">
+    <h1>Hello dog</h1>
+
+    <hr />
+
+    <div class="row">
+      <span>Test : ED248925062TH</span>
+      <div class="col-sm-4">
+        <span> Tracking number </span>
+        <input
+          id="tracking"
+          type="text"
+          class="form-control"
+          placeholder="XXXXXXXX"
+        />
+        <div class="mt-2 d-flex justify-content-end">
+          <button onClick="search()" class="btn btn-primary ju">
+            Search Number
+          </button>
+        </div>
+      </div>
+      <div id="render" class="col-sm-8">
+        <script>
+          function search() {
+            let tracking = document.querySelector("#tracking");
+            if (tracking.value.length <= 0) {
+              alert("Please fill tracking number");
+            } else {
+              // get token
+              let data = JSON.stringify({
+                status: "all",
+                language: "TH",
+                barcode: [tracking.value],
+              });
+
+              let config = {
+                method: "post",
+                maxBodyLength: Infinity,
+                url: "https://trackapi.thailandpost.co.th/post/api/v1/authenticate/token",
+                headers: {
+                  Authorization:
+                    "Token FPGHBmH*HSPvM^RQWIXMT5FWCdJ-AFV9XGByM1QbKiX~OUWOLVF+SgUlUtRyVNAfXAZ$ZFLTD*C6W6EqWxGOAWYdYDDxL-WkUFHQ",
+                  "Content-Type": "application/json",
+                },
+                data: data,
+              };
+
+              axios(config)
+                .then((response) => {
+                  console.log(JSON.stringify(response.data));
+                  if (response.data.token && response.data.expire) {
+                    const token = response.data.token;
+
+                    let config = {
+                      method: "post",
+                      maxBodyLength: Infinity,
+                      url: "https://trackapi.thailandpost.co.th/post/api/v1/track",
+                      headers: {
+                        Authorization: "Token " + token,
+                        "Content-Type": "application/json",
+                      },
+                      data: data,
+                    };
+
+                    axios
+                      .request(config)
+                      .then((response) => {
+                        console.log("final : ", response.data);
+                        if (response.data.message == "successful") {
+                          let render = document.querySelector("#render");
+                          let responsex =
+                            response.data.response.items[tracking.value];
+                          let html = "";
+                          for (let i = 0; i < responsex.length; i++) {
+                            const element = responsex[i];
+                            html += `
+                            <div class="card p-3 mt-2 d-flex gap-4">
+                                <div class="d-flex justify-content-between" style="border-bottom: 1px solid #adadad">
+                                    <span> status </span>
+                                    <span> ${element.status_description} </span>
+                                </div>
+                                <div class="d-flex justify-content-between" style="border-bottom: 1px solid #adadad">
+                                     <span> locattion </span>
+                                     <span> ${element.location} </span>
+                                </div>
+                                <div class="d-flex justify-content-between" style="border-bottom: 1px solid #adadad">
+                                     <span> time </span>
+                                    <span> ${element.status_date} </span>
+                                </div>
+                            </div>   
+                            `;
+                          }
+                          render.innerHTML = html;
+                        } else {
+                          alert("Something went wrong!");
+                        }
+                      })
+                      .catch((error) => {
+                        console.log(error);
+                        alert("Something went wrong!");
+                      });
+                  } else {
+                    alert("Something went wrong!");
+                  }
+                })
+                .catch((error) => {
+                  console.log(error);
+                  alert("Something went wrong!");
+                });
+            }
+          }
+        </script>
+      </div>
+    </div>
+  </body>
+</html>
